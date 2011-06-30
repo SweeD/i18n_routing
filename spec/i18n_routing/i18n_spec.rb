@@ -108,6 +108,8 @@ describe :localized_routes do
               end
             end
 
+            match '/:city/meetings/today' => 'meetings#index', :as => :city_meetings
+
             resources :universes do
               resources :galaxies do
                 resources :planets do

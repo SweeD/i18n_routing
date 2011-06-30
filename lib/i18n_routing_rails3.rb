@@ -290,11 +290,12 @@ module I18nRouting
       I18n.locale = locale
       ts = @path.gsub(/^\//, '')
       ts.gsub!('(.:format)', '')
-      
-      tp = @options[:as] && I18nRouting.translation_for(@options[:as], :named_routes) || 
-          !ts.blank? && I18nRouting.translation_for(ts, :named_routes_path) || ts
-      
-      localized_scope = I18nRouting.translation_for(@scope[:path].gsub(/\//, ''), :scopes) if @scope[:path]
+
+      tp = @options[:as] && I18nRouting.translation_for(@options[:as], :named_routes) || !ts.blank? && I18nRouting.translation_for(ts, :named_routes_path)
+      tp ||= split_and_translate_route(ts)
+
+
+      localized_scope = split_and_translate_route(@scope[:path].gsub(/\//, '')) if @scope[:path] and not @scope[:path].match(/:/)
       path = localized_scope ? '/' << localized_scope : @scope[:path]
       @localized_path = File.join((path || ''), tp).gsub(/\/$/, '')
 
@@ -316,6 +317,21 @@ module I18nRouting
     # Return true if this route is localizable
     def localizable?
       @localized_path != nil
+    end
+
+    # Split given path by '/', translates each part, joins it with an / and return
+    #
+    # === Parameters
+    # * <tt>route</tt> - Route for translation
+    def split_and_translate_route(route)
+      translated_route_ary ||= route.split('/').collect do |part|
+        tr_path = I18nRouting.translation_for(part, :named_routes)
+        tr_path ||= I18nRouting.translation_for(part, :named_routes_path)
+        tr_path ||= I18nRouting.translation_for(part, :scopes)
+        tr_path || part
+      end
+      translated_route = translated_route_ary.join('/')
+      return translated_route.present? ? translated_route : route
     end
   end
 
